@@ -41,6 +41,10 @@ module SpreeStoreCredits::OrderDecorator
       end
     end
 
+    def using_store_credit?
+      total_applicable_store_credit > 0
+    end
+
     def covered_by_store_credit?
       return false unless user
       user.total_available_store_credit >= total
