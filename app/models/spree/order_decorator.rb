@@ -1,12 +1,34 @@
 module SpreeStoreCredits::OrderDecorator
   def self.included(base)
+    base.checkout_flow do
+      go_to_state :address, if: ->(order) { !order.only_gift_cards?}
+      go_to_state :delivery, if: ->(order) { !order.only_gift_cards?}
+      go_to_state :payment, if: ->(order) { order.payment_required? }
+      go_to_state :confirm, if: ->(order) { order.confirmation_required? }
+      go_to_state :gift_card, if: ->(order){ order.has_gift_cards? }
+      go_to_state :complete
+      remove_transition from: :delivery, to: :confirm
+    end
+    # base.insert_checkout_step :gift_card, after: :confirm, if: ->(order){ order.has_gift_cards? }
     base.state_machine.before_transition to: :confirm, do: :add_store_credit_payments
     base.state_machine.after_transition to: :confirm, do: :create_gift_cards
+
+    base.has_many :gift_cards, through: :line_items
+    base.accepts_nested_attributes_for :gift_cards
 
     base.prepend(InstanceMethods)
   end
 
   module InstanceMethods
+
+    def has_gift_cards? 
+      return line_items.any?{ |li| li.gift_card? }
+    end
+
+    def only_gift_cards?
+      return line_items.all?{ |li| li.gift_card? }
+    end
+
     def create_gift_cards
       line_items.each do |item|
         item.quantity.times do
