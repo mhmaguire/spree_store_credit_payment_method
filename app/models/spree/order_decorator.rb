@@ -11,7 +11,7 @@ module SpreeStoreCredits::OrderDecorator
     end
     # base.insert_checkout_step :gift_card, after: :confirm, if: ->(order){ order.has_gift_cards? }
     base.state_machine.before_transition to: :confirm, do: :add_store_credit_payments
-    base.state_machine.after_transition to: :confirm, do: :create_gift_cards
+    base.state_machine.before_transition to: :gift_card, do: :create_gift_cards
 
     base.has_many :gift_cards, through: :line_items
     base.accepts_nested_attributes_for :gift_cards
@@ -31,8 +31,12 @@ module SpreeStoreCredits::OrderDecorator
 
     def create_gift_cards
       line_items.each do |item|
-        item.quantity.times do
-          Spree::VirtualGiftCard.create!(amount: item.price, currency: item.currency, purchaser: user, line_item: item) if item.gift_card?
+        if item.gift_card?
+          #destroy all gift cards in case user transitioned back to a previous state
+          item.gift_cards.destroy_all
+          item.quantity.times do
+            Spree::VirtualGiftCard.create!(amount: item.price, currency: item.currency, purchaser: user, line_item: item)
+          end
         end
       end
     end
