@@ -3,9 +3,9 @@ module SpreeStoreCredits::OrderDecorator
     base.checkout_flow do
       go_to_state :address, if: ->(order) { !order.only_gift_cards?}
       go_to_state :delivery, if: ->(order) { !order.only_gift_cards?}
+      go_to_state :gift_card, if: ->(order){ order.has_gift_cards? }
       go_to_state :payment, if: ->(order) { order.payment_required? }
       go_to_state :confirm, if: ->(order) { order.confirmation_required? }
-      go_to_state :gift_card, if: ->(order){ order.has_gift_cards? }
       go_to_state :complete
       remove_transition from: :delivery, to: :confirm
     end
