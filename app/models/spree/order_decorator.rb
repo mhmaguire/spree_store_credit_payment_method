@@ -16,6 +16,12 @@ module SpreeStoreCredits::OrderDecorator
     base.has_many :gift_cards, through: :line_items
     base.accepts_nested_attributes_for :gift_cards
 
+    base.state_machine do 
+      event :to_cart do 
+        transition to: :cart, from: [:payment, :address, :gift_card, :delivery, :confirm]
+      end
+    end
+
     base.prepend(InstanceMethods)
   end
 
